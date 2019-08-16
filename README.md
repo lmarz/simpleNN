@@ -1,2 +1,78 @@
 # simpleNN
 Simple Neural Network header written in C
+
+Inspired by TheCodingTrain - [Toy-Neural-Network-JS](https://github.com/CodingTrain/Toy-Neural-Network-JS)
+
+It has 1 hidden layer and
+it uses Backpropagation as learning method with the sigmoid function as activation function
+
+## Getting Started
+### Prerequisites
+You need the following library:
++ [libgsl](https://www.gnu.org/software/gsl/) - (GNU Scientific Library)
+
+### Compiling
+For gcc, you have to include these libraries in the linking process:
+```
+-lgsl -lm
+```
+
+### Documentation
+* `struct NeuralNetwork` - the struct, that inhabits the information of the Neural Network
+    * `int input_nodes` - the amount of input nodes
+    * `int hidden_nodes` - the amount of hidden nodes
+    * `int output_nodes` - the amount of output nodes
+    * `gsl_matrix* weights_ih` - the weights of the connections between the input nodes and the hidden nodes
+    * `gsl_matrix* weights_ho` - the weights of the connections between the hidden nodes and the output nodes
+    * `gsl_matrix* bias_ih` - the bias of the connections between the input nodes and the hidden nodes
+    * `gsl_matrix* bias_ho` - the bias of the connections between the hidden nodes and the output nodes
+* `NeuralNetwork createNeuralNetwork(int input_nodes, int hidden_nodes, int output_nodes)` - a function, that creates a Neural Network
+* `gsl_matrix* predict(NeuralNetwork nn, double[] input)` - a function, that calculates the output of the Neural Network. The length of the input array has to be the exact same as the amount of input nodes. The output values are always between 0 and 1
+* `void train(NeuralNetwork nn, double[] training_input, double[] training_output)` - a function, that trains the Neural Network one time wit the given training input and the expected output. Input and output have to be the exact same length as the amount of their specific nodes
+* `void destroyNeuralNetwork(NeuralNetwork nn)` - a function, that destroys the Neural Network
+
+For help with gsl_matrix, visit the [GSL Documentation](https://www.gnu.org/software/gsl/doc/html/vectors.html#matrices)
+
+## Example
+Here is a simple example on how to use the Neural Network:
+
+    #include <stdio.h>
+    #include "nn.h"
+
+    int main() {
+        // Specify the amount of Nodes for the Neural Network
+        int input_nodes = 2;
+        int hidden_nodes = 1;
+        int output_nodes = 1;
+
+        // Create the Neural Network
+        NeuralNetwork nn = createNeuralNetwork(input_nodes, hidden_nodes, output_nodes);
+
+        // Specify the training data
+        double training_input_1[2] = { 1, 1 };
+        double training_output_1[1] = { 0 };
+
+        double training_input_2[2] = { 0, 0 };
+        double training_output_2[1] = { 1 };
+
+        // Train the Neural Network 1000000 times with the training data
+        for( int i = 0; i < 1000000; i++ ) {
+            // Switch between the two training sets
+            if( i % 2 == 0 ) {
+                train(nn, training_input_1, training_output_1);
+            } else {
+                train(nn, training_input_2, training_output_2);
+            }
+        }
+
+        // Let the trained Neural Network predict the output of training set 1 (should be close to 0)
+        gsl_matrix* output = predict(nn, training_input_1);
+        printf("Output: %f\n", gsl_matrix_get(output, 0, 0));
+
+        // Destroy the Neural Network at the end
+        destroyNeuralNetwork(nn);
+
+        return 0;
+    }
+### License
+This project is licensed under the terms of the MIT license, see [LICENSE](LICENSE)
