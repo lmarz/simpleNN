@@ -36,43 +36,45 @@ For help with gsl_matrix, visit the [GSL Documentation](https://www.gnu.org/soft
 ## Example
 Here is a simple example on how to use the Neural Network:
 
-    #include <stdio.h>
-    #include "nn.h"
+``` c
+#include <stdio.h>
+#include "nn.h"
 
-    int main() {
-        // Specify the amount of Nodes for the Neural Network
-        int input_nodes = 2;
-        int hidden_nodes = 1;
-        int output_nodes = 1;
+int main() {
+    // Specify the amount of Nodes for the Neural Network
+    int input_nodes = 2;
+    int hidden_nodes = 1;
+    int output_nodes = 1;
 
-        // Create the Neural Network
-        NeuralNetwork nn = createNeuralNetwork(input_nodes, hidden_nodes, output_nodes);
+    // Create the Neural Network
+    NeuralNetwork nn = createNeuralNetwork(input_nodes, hidden_nodes, output_nodes);
 
-        // Specify the training data
-        double training_input_1[2] = { 1, 1 };
-        double training_output_1[1] = { 0 };
+    // Specify the training data
+    double training_input_1[2] = { 1, 1 };
+    double training_output_1[1] = { 0 };
 
-        double training_input_2[2] = { 0, 0 };
-        double training_output_2[1] = { 1 };
+    double training_input_2[2] = { 0, 0 };
+    double training_output_2[1] = { 1 };
 
-        // Train the Neural Network 1000000 times with the training data
-        for( int i = 0; i < 1000000; i++ ) {
-            // Switch between the two training sets
-            if( i % 2 == 0 ) {
-                train(nn, training_input_1, training_output_1);
-            } else {
-                train(nn, training_input_2, training_output_2);
-            }
+    // Train the Neural Network 1000000 times with the training data
+    for( int i = 0; i < 1000000; i++ ) {
+        // Switch between the two training sets
+        if( i % 2 == 0 ) {
+            train(nn, training_input_1, training_output_1);
+        } else {
+            train(nn, training_input_2, training_output_2);
         }
-
-        // Let the trained Neural Network predict the output of training set 1 (should be close to 0)
-        gsl_matrix* output = predict(nn, training_input_1);
-        printf("Output: %f\n", gsl_matrix_get(output, 0, 0));
-
-        // Destroy the Neural Network at the end
-        destroyNeuralNetwork(nn);
-
-        return 0;
     }
+
+    // Let the trained Neural Network predict the output of training set 1 (should be close to 0)
+    gsl_matrix* output = predict(nn, training_input_1);
+    printf("Output: %f\n", gsl_matrix_get(output, 0, 0));
+
+    // Destroy the Neural Network at the end
+    destroyNeuralNetwork(nn);
+
+    return 0;
+}
+```
 ### License
 This project is licensed under the terms of the MIT license, see [LICENSE](LICENSE)
