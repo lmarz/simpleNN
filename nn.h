@@ -1,4 +1,4 @@
-/** MIT License
+/* MIT License
 
 Copyright (c) 2019 lmarz
 
@@ -27,18 +27,35 @@ SOFTWARE. */
 #ifndef NN_H
 #define NN_H
 
+/* ================================================== */
+/* General Settings */
+/* ================================================== */
+
 /**
- * the struct, that inhabits the information of the Neural Network
+ * The learning rate for backpropagation. Use #define NN_LEARNING_RATE [value] in your main file to change this value
  */
-typedef struct NeuralNetwork {
-    int input_nodes;
-    int hidden_nodes;
-    int output_nodes;
-    gsl_matrix* weights_ih;
-    gsl_matrix* weights_ho;
-    gsl_matrix* bias_h;
-    gsl_matrix* bias_o;
-} NeuralNetwork;
+#ifndef NN_LEARNING_RATE
+#define NN_LEARNING_RATE 0.1
+#endif
+
+/**
+ * The avaiable activation functions
+ */
+enum ActivationFunctions {
+    NN_SIGMOID,
+    NN_TANGENT
+};
+
+/**
+ * The used activation function. Use #define NN_ACTIVATION_FUNCTION [ActivationFunctions] in your main file to change the function
+ */
+#ifndef NN_ACTIVATION_FUNCTION
+#define NN_ACTIVATION_FUNCTION NN_SIGMOID
+#endif
+
+/* ================================================== */
+/* Helper Functions */
+/* ================================================== */
 
 /**
  * A function, that multiplies two matrices and outputs a new one
@@ -83,6 +100,69 @@ void sigmoidFunctiond(gsl_matrix* m) {
 }
 
 /**
+ * The tangent function for x
+ */
+void tanFunction(gsl_matrix* m) {
+    for(int i = 0; i < m->size1; i++) {
+        for(int j = 0; j < m->size2; j++) {
+            double val = gsl_matrix_get(m, i, j);
+            gsl_matrix_set(m, i, j, tanh(val));
+        }
+    }
+}
+
+/**
+ * The tangent function for y
+ */
+void tanFunctiond(gsl_matrix* m) {
+    for(int i = 0; i < m->size1; i++) {
+        for(int j = 0; j < m->size2; j++) {
+            double val = gsl_matrix_get(m, i, j);
+            gsl_matrix_set(m, i, j, 1 - (val * val));
+        }
+    }
+}
+
+/**
+ * The activation function, that is used to determine, which function to use
+ */
+void activationFunction(gsl_matrix* m) {
+    if(NN_ACTIVATION_FUNCTION == 0) {
+        sigmoidFunction(m);
+    } else {
+        tanFunction(m);
+    }
+}
+
+/**
+ * The activation function, that is used to determine, which function to use
+ */
+void activationFunctiond(gsl_matrix* m) {
+    if(NN_ACTIVATION_FUNCTION == 0) {
+        sigmoidFunctiond(m);
+    } else {
+        tanFunctiond(m);
+    }
+}
+
+/* ================================================== */
+/* The main stuff, that should be used by the user */
+/* ================================================== */
+
+/**
+ * the struct, that inhabits the information of the Neural Network
+ */
+typedef struct NeuralNetwork {
+    int input_nodes;
+    int hidden_nodes;
+    int output_nodes;
+    gsl_matrix* weights_ih;
+    gsl_matrix* weights_ho;
+    gsl_matrix* bias_h;
+    gsl_matrix* bias_o;
+} NeuralNetwork;
+
+/**
  * a function, that creates a Neural Network
  */
 NeuralNetwork createNeuralNetwork(int input_nodes, int hidden_nodes, int output_nodes) {
@@ -118,9 +198,9 @@ NeuralNetwork createNeuralNetwork(int input_nodes, int hidden_nodes, int output_
 }
 
 /**
- * a function, that calculates the output of the Neural Network. The length of the input array has to be the exact same as the amount of input nodes. The output values are always between 0 and 1
+ * a function, that calculates the output of the Neural Network. The length of the input array has to be the exact same as the amount of input nodes. The length of the output array has also to be exactlay the same as the amount of output nodes. The output values are always between 0 and 1
  */
-gsl_matrix* predict(NeuralNetwork nn, double in[]) {
+void predict(NeuralNetwork nn, double in[], double* out) {
     gsl_matrix* input = gsl_matrix_alloc(nn.input_nodes, 1);
     for(int i = 0; i < nn.input_nodes; i++) {
         gsl_matrix_set(input, i, 0, in[i]);
@@ -128,16 +208,18 @@ gsl_matrix* predict(NeuralNetwork nn, double in[]) {
 
     gsl_matrix* hidden = multiplyMatrices(nn.weights_ih, input);
     gsl_matrix_add(hidden, nn.bias_h);
-    sigmoidFunction(hidden);
+    activationFunction(hidden);
 
     gsl_matrix* output = multiplyMatrices(nn.weights_ho, hidden);
     gsl_matrix_add(output, nn.bias_o);
-    sigmoidFunction(output);
+    activationFunction(output);
 
     gsl_matrix_free(hidden);
     gsl_matrix_free(input);
 
-    return output;
+    for(int i = 0; i < nn.output_nodes; i++) {
+        out[i] = gsl_matrix_get(output, i, 0);
+    }
 }
 
 /**
@@ -145,6 +227,7 @@ gsl_matrix* predict(NeuralNetwork nn, double in[]) {
  */
 void train(NeuralNetwork nn, double in[], double tar[]) {
     // TODO: Needs Documentation (for myself)
+    // Predict the output
     gsl_matrix* input = gsl_matrix_alloc(nn.input_nodes, 1);
     for(int i = 0; i < nn.input_nodes; i++) {
         gsl_matrix_set(input, i, 0, in[i]);
@@ -152,22 +235,25 @@ void train(NeuralNetwork nn, double in[], double tar[]) {
 
     gsl_matrix* hidden = multiplyMatrices(nn.weights_ih, input);
     gsl_matrix_add(hidden, nn.bias_h);
-    sigmoidFunction(hidden);
+    activationFunction(hidden);
 
     gsl_matrix* output = multiplyMatrices(nn.weights_ho, hidden);
     gsl_matrix_add(output, nn.bias_o);
-    sigmoidFunction(output);
+    activationFunction(output);
 
+    // Format the target values
     gsl_matrix* target = gsl_matrix_alloc(nn.output_nodes, 1);
     for(int i = 0; i < nn.output_nodes; i++) {
         gsl_matrix_set(target, i, 0, tar[i]);
     }
 
+    // Get the Error
     gsl_matrix_sub(target, output);
 
-    sigmoidFunctiond(output);
+    // Let weights_ho and bias_ho learn from this error
+    activationFunctiond(output);
     gsl_matrix_mul_elements(output, target);
-    gsl_matrix_scale(output, 0.1);
+    gsl_matrix_scale(output, NN_LEARNING_RATE);
 
     gsl_matrix* hiddenT = gsl_matrix_alloc(hidden->size2, hidden->size1);
     gsl_matrix_transpose_memcpy(hiddenT, hidden);
@@ -179,15 +265,16 @@ void train(NeuralNetwork nn, double in[], double tar[]) {
     gsl_matrix_add(nn.bias_o, output);
     gsl_matrix_free(output);
 
+    // Let weights_ih and bias_ih learn from the error
     gsl_matrix* whoT = gsl_matrix_alloc(nn.weights_ho->size2, nn.weights_ho->size1);
     gsl_matrix_transpose_memcpy(whoT, nn.weights_ho);
     gsl_matrix* hidden_error = multiplyMatrices(whoT, target);
     gsl_matrix_free(whoT);
 
-    sigmoidFunctiond(hidden);
+    activationFunctiond(hidden);
     gsl_matrix_mul_elements(hidden, hidden_error);
     gsl_matrix_free(hidden_error);
-    gsl_matrix_scale(hidden, 0.1);
+    gsl_matrix_scale(hidden, NN_LEARNING_RATE);
 
     gsl_matrix* inputT = gsl_matrix_alloc(input->size2, input->size1);
     gsl_matrix_transpose_memcpy(inputT, input);

@@ -3,8 +3,7 @@ Simple Neural Network header written in C
 
 Inspired by TheCodingTrain - [Toy-Neural-Network-JS](https://github.com/CodingTrain/Toy-Neural-Network-JS)
 
-It has 1 hidden layer and
-it uses Backpropagation as learning method with the sigmoid function as activation function
+It has one hidden layer and uses Backpropagation as learning method.
 
 ## Getting Started
 ### Prerequisites
@@ -18,6 +17,14 @@ For gcc, you have to include these libraries in the linking process:
 ```
 
 ### Documentation
+#### Macros
+* `NN_LEARNING_RATE` - the learning rate for backpropagation. Use `#define NN_LEARNING_RATE [double]` in your main file to change this value
+* `NN_ACTIVATION_FUNCTION` - the used activation function. Use `#define NN_ACTIVATION_FUNCTION [ActivationFunctions]` in your main file to change the function
+
+#### Structs and Enums
+* `enum ActivationFunctions` - the avaiable activation functions
+    * `NN_SIGMOID` - the sigmoid function
+    * `NN_TANGENT` - the tangent function
 * `struct NeuralNetwork` - the struct, that inhabits the information of the Neural Network
     * `int input_nodes` - the amount of input nodes
     * `int hidden_nodes` - the amount of hidden nodes
@@ -26,18 +33,19 @@ For gcc, you have to include these libraries in the linking process:
     * `gsl_matrix* weights_ho` - the weights of the connections between the hidden nodes and the output nodes
     * `gsl_matrix* bias_ih` - the bias of the connections between the input nodes and the hidden nodes
     * `gsl_matrix* bias_ho` - the bias of the connections between the hidden nodes and the output nodes
+
+#### Functions
 * `NeuralNetwork createNeuralNetwork(int input_nodes, int hidden_nodes, int output_nodes)` - a function, that creates a Neural Network
-* `gsl_matrix* predict(NeuralNetwork nn, double[] input)` - a function, that calculates the output of the Neural Network. The length of the input array has to be the exact same as the amount of input nodes. The output values are always between 0 and 1
-* `void train(NeuralNetwork nn, double[] training_input, double[] training_output)` - a function, that trains the Neural Network one time wit the given training input and the expected output. Input and output have to be the exact same length as the amount of their specific nodes
+* `gsl_matrix* predict(NeuralNetwork nn, double[] input, double[] output)` - a function, that calculates the output of the Neural Network. The length of the input array has to be the exact same as the amount of input nodes. The length of the output array has also to be exactlay the same as the amount of output nodes. The output values are always between 0 and 1
+* `void train(NeuralNetwork nn, double[] training_input, double[] training_output)` - a function, that trains the Neural Network one time with the given training input and the expected output. Input and output have to be the exact same length as the amount of their specific nodes
 * `void destroyNeuralNetwork(NeuralNetwork nn)` - a function, that destroys the Neural Network
 
-For help with gsl_matrix, visit the [GSL Documentation](https://www.gnu.org/software/gsl/doc/html/vectors.html#matrices)
+For help with `gsl_matrix`, visit the [GSL Documentation](https://www.gnu.org/software/gsl/doc/html/vectors.html#matrices)
 
 ## Example
 Here is a simple example on how to use the Neural Network:
 
 ``` c
-#include <stdio.h>
 #include "nn.h"
 
 int main() {
@@ -67,8 +75,9 @@ int main() {
     }
 
     // Let the trained Neural Network predict the output of training set 1 (should be close to 0)
-    gsl_matrix* output = predict(nn, training_input_1);
-    printf("Output: %f\n", gsl_matrix_get(output, 0, 0));
+    double output[nn.output_nodes]; 
+    predict(nn, training_input_1, output);
+    printf("Output: %f\n", output[0]);
 
     // Destroy the Neural Network at the end
     destroyNeuralNetwork(nn);
