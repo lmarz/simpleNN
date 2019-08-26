@@ -18,8 +18,8 @@ For gcc, you have to include these libraries in the linking process:
 
 ### Documentation
 #### Macros
-* `NN_LEARNING_RATE` - the learning rate for backpropagation. Use `#define NN_LEARNING_RATE [double]` in your main file to change this value
-* `NN_ACTIVATION_FUNCTION` - the used activation function. Use `#define NN_ACTIVATION_FUNCTION [ActivationFunctions]` in your main file to change the function
+* `NN_LEARNING_RATE` - the learning rate for backpropagation. Default is `0.1`. Use `#define NN_LEARNING_RATE [double]` in your main file **before #include "nn.h"** to change this value
+* `NN_ACTIVATION_FUNCTION` - the used activation function Default is `NN_SIGMOID`. Use `#define NN_ACTIVATION_FUNCTION [ActivationFunctions]` in your main file **before #include "nn.h"** to change the function
 
 #### Structs and Enums
 * `enum ActivationFunctions` - the avaiable activation functions
