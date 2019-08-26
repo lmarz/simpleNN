@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE. */
 
-#include <gsl/gsl_matrix.h>
+#include "matrix.h"
 #include <math.h>
 #include <time.h>
 
@@ -58,31 +58,13 @@ enum ActivationFunctions {
 /* ================================================== */
 
 /**
- * A function, that multiplies two matrices and outputs a new one
- */
-gsl_matrix* multiplyMatrices(gsl_matrix* a, gsl_matrix* b) {
-    if(a->size2 != b->size1) return NULL;
-    gsl_matrix* c = gsl_matrix_alloc(a->size1, b->size2);
-    gsl_matrix_set_zero(c);
-    for(int i = 0; i < c->size1; i++) {
-        for(int j = 0; j < c->size2; j++) {
-            for(int k = 0; k < a->size2; k++) {
-                gsl_matrix_set(c, i, j, gsl_matrix_get(c, i, j) + gsl_matrix_get(a, i, k) * gsl_matrix_get(b, k, j));
-            }
-        }
-    }
-
-    return c;
-}
-
-/**
  * The sigmoid function for x
  */
-void sigmoidFunction(gsl_matrix* m) {
-    for(int i = 0; i < m->size1; i++) {
-        for(int j = 0; j < m->size2; j++) {
-            double val = gsl_matrix_get(m, i, j);
-            gsl_matrix_set(m, i, j, 1 / (1 + exp(-val)));
+void sigmoidFunction(Matrix* m) {
+    for(int i = 0; i < m->rows; i++) {
+        for(int j = 0; j < m->cols; j++) {
+            double val = matrix_get(m, i, j);
+            matrix_set(m, i, j, 1 / (1 + exp(-val)));
         }
     }
 }
@@ -90,11 +72,11 @@ void sigmoidFunction(gsl_matrix* m) {
 /**
  * The sigmoid function for y
  */
-void sigmoidFunctiond(gsl_matrix* m) {
-    for(int i = 0; i < m->size1; i++) {
-        for(int j = 0; j < m->size2; j++) {
-            double val = gsl_matrix_get(m, i, j);
-            gsl_matrix_set(m, i, j, val * (1 - val));
+void sigmoidFunctiond(Matrix* m) {
+    for(int i = 0; i < m->rows; i++) {
+        for(int j = 0; j < m->cols; j++) {
+            double val = matrix_get(m, i, j);
+            matrix_set(m, i, j, val * (1 - val));
         }
     }
 }
@@ -102,11 +84,11 @@ void sigmoidFunctiond(gsl_matrix* m) {
 /**
  * The tangent function for x
  */
-void tanFunction(gsl_matrix* m) {
-    for(int i = 0; i < m->size1; i++) {
-        for(int j = 0; j < m->size2; j++) {
-            double val = gsl_matrix_get(m, i, j);
-            gsl_matrix_set(m, i, j, tanh(val));
+void tanFunction(Matrix* m) {
+    for(int i = 0; i < m->rows; i++) {
+        for(int j = 0; j < m->cols; j++) {
+            double val = matrix_get(m, i, j);
+            matrix_set(m, i, j, tanh(val));
         }
     }
 }
@@ -114,11 +96,11 @@ void tanFunction(gsl_matrix* m) {
 /**
  * The tangent function for y
  */
-void tanFunctiond(gsl_matrix* m) {
-    for(int i = 0; i < m->size1; i++) {
-        for(int j = 0; j < m->size2; j++) {
-            double val = gsl_matrix_get(m, i, j);
-            gsl_matrix_set(m, i, j, 1 - (val * val));
+void tanFunctiond(Matrix* m) {
+    for(int i = 0; i < m->rows; i++) {
+        for(int j = 0; j < m->cols; j++) {
+            double val = matrix_get(m, i, j);
+            matrix_set(m, i, j, 1 - (val * val));
         }
     }
 }
@@ -126,7 +108,7 @@ void tanFunctiond(gsl_matrix* m) {
 /**
  * The activation function, that is used to determine, which function to use
  */
-void activationFunction(gsl_matrix* m) {
+void activationFunction(Matrix* m) {
     if(NN_ACTIVATION_FUNCTION == 0) {
         sigmoidFunction(m);
     } else {
@@ -137,7 +119,7 @@ void activationFunction(gsl_matrix* m) {
 /**
  * The activation function, that is used to determine, which function to use
  */
-void activationFunctiond(gsl_matrix* m) {
+void activationFunctiond(Matrix* m) {
     if(NN_ACTIVATION_FUNCTION == 0) {
         sigmoidFunctiond(m);
     } else {
@@ -156,10 +138,10 @@ typedef struct NeuralNetwork {
     int input_nodes;
     int hidden_nodes;
     int output_nodes;
-    gsl_matrix* weights_ih;
-    gsl_matrix* weights_ho;
-    gsl_matrix* bias_h;
-    gsl_matrix* bias_o;
+    Matrix* weights_ih;
+    Matrix* weights_ho;
+    Matrix* bias_h;
+    Matrix* bias_o;
 } NeuralNetwork;
 
 /**
@@ -170,28 +152,28 @@ NeuralNetwork createNeuralNetwork(int input_nodes, int hidden_nodes, int output_
     nn.input_nodes = input_nodes;
     nn.hidden_nodes = hidden_nodes;
     nn.output_nodes = output_nodes;
-    nn.weights_ih = gsl_matrix_alloc(hidden_nodes, input_nodes);
-    nn.weights_ho = gsl_matrix_alloc(output_nodes, hidden_nodes);
-    nn.bias_h = gsl_matrix_alloc(hidden_nodes, 1);
-    nn.bias_o = gsl_matrix_alloc(output_nodes, 1);
+    nn.weights_ih = matrix_create(hidden_nodes, input_nodes);
+    nn.weights_ho = matrix_create(output_nodes, hidden_nodes);
+    nn.bias_h = matrix_create(hidden_nodes, 1);
+    nn.bias_o = matrix_create(output_nodes, 1);
 
     srand(time(NULL));
 
     for(int i = 0; i < hidden_nodes; i++) {
         for(int j = 0; j < input_nodes; j++) {
-            gsl_matrix_set(nn.weights_ih, i, j, (double)rand()/RAND_MAX * 2 - 1);
+            matrix_set(nn.weights_ih, i, j, (double)rand()/RAND_MAX * 2 - 1);
         }
     }
     for(int i = 0; i < output_nodes; i++) {
         for(int j = 0; j < hidden_nodes; j++) {
-            gsl_matrix_set(nn.weights_ho, i, j, (double)rand()/RAND_MAX * 2 - 1);
+            matrix_set(nn.weights_ho, i, j, (double)rand()/RAND_MAX * 2 - 1);
         }
     }
     for(int i = 0; i < hidden_nodes; i++) {
-        gsl_matrix_set(nn.bias_h, i, 0, (double)rand()/RAND_MAX * 2 - 1);
+        matrix_set(nn.bias_h, i, 0, (double)rand()/RAND_MAX * 2 - 1);
     }
     for(int i = 0; i < output_nodes; i++) {
-        gsl_matrix_set(nn.bias_o, i, 0, (double)rand()/RAND_MAX * 2 - 1);
+        matrix_set(nn.bias_o, i, 0, (double)rand()/RAND_MAX * 2 - 1);
     }
 
     return nn;
@@ -201,24 +183,24 @@ NeuralNetwork createNeuralNetwork(int input_nodes, int hidden_nodes, int output_
  * a function, that calculates the output of the Neural Network. The length of the input array has to be the exact same as the amount of input nodes. The length of the output array has also to be exactlay the same as the amount of output nodes. The output values are always between 0 and 1
  */
 void predict(NeuralNetwork nn, double in[], double* out) {
-    gsl_matrix* input = gsl_matrix_alloc(nn.input_nodes, 1);
+    Matrix* input = matrix_create(nn.input_nodes, 1);
     for(int i = 0; i < nn.input_nodes; i++) {
-        gsl_matrix_set(input, i, 0, in[i]);
+        matrix_set(input, i, 0, in[i]);
     }
 
-    gsl_matrix* hidden = multiplyMatrices(nn.weights_ih, input);
-    gsl_matrix_add(hidden, nn.bias_h);
+    Matrix* hidden = matrix_multiply(nn.weights_ih, input);
+    matrix_add(hidden, nn.bias_h);
     activationFunction(hidden);
 
-    gsl_matrix* output = multiplyMatrices(nn.weights_ho, hidden);
-    gsl_matrix_add(output, nn.bias_o);
+    Matrix* output = matrix_multiply(nn.weights_ho, hidden);
+    matrix_add(output, nn.bias_o);
     activationFunction(output);
 
-    gsl_matrix_free(hidden);
-    gsl_matrix_free(input);
+    matrix_destroy(hidden);
+    matrix_destroy(input);
 
     for(int i = 0; i < nn.output_nodes; i++) {
-        out[i] = gsl_matrix_get(output, i, 0);
+        out[i] = matrix_get(output, i, 0);
     }
 }
 
@@ -228,74 +210,74 @@ void predict(NeuralNetwork nn, double in[], double* out) {
 void train(NeuralNetwork nn, double in[], double tar[]) {
     // TODO: Needs Documentation (for myself)
     // Predict the output
-    gsl_matrix* input = gsl_matrix_alloc(nn.input_nodes, 1);
+    Matrix* input = matrix_create(nn.input_nodes, 1);
     for(int i = 0; i < nn.input_nodes; i++) {
-        gsl_matrix_set(input, i, 0, in[i]);
+        matrix_set(input, i, 0, in[i]);
     }
 
-    gsl_matrix* hidden = multiplyMatrices(nn.weights_ih, input);
-    gsl_matrix_add(hidden, nn.bias_h);
+    Matrix* hidden = matrix_multiply(nn.weights_ih, input);
+    matrix_add(hidden, nn.bias_h);
     activationFunction(hidden);
 
-    gsl_matrix* output = multiplyMatrices(nn.weights_ho, hidden);
-    gsl_matrix_add(output, nn.bias_o);
+    Matrix* output = matrix_multiply(nn.weights_ho, hidden);
+    matrix_add(output, nn.bias_o);
     activationFunction(output);
 
     // Format the target values
-    gsl_matrix* target = gsl_matrix_alloc(nn.output_nodes, 1);
+    Matrix* target = matrix_create(nn.output_nodes, 1);
     for(int i = 0; i < nn.output_nodes; i++) {
-        gsl_matrix_set(target, i, 0, tar[i]);
+        matrix_set(target, i, 0, tar[i]);
     }
 
     // Get the Error
-    gsl_matrix_sub(target, output);
+    matrix_subtract(target, output);
 
     // Let weights_ho and bias_ho learn from this error
     activationFunctiond(output);
-    gsl_matrix_mul_elements(output, target);
-    gsl_matrix_scale(output, NN_LEARNING_RATE);
+    matrix_multiply_elements(output, target);
+    matrix_scale(output, NN_LEARNING_RATE);
 
-    gsl_matrix* hiddenT = gsl_matrix_alloc(hidden->size2, hidden->size1);
-    gsl_matrix_transpose_memcpy(hiddenT, hidden);
-    gsl_matrix* weight_ho_delta = multiplyMatrices(output, hiddenT);
-    gsl_matrix_free(hiddenT);
+    Matrix* hiddenT = matrix_create(hidden->cols, hidden->rows);
+    matrix_transpose(hiddenT, hidden);
+    Matrix* weight_ho_delta = matrix_multiply(output, hiddenT);
+    matrix_destroy(hiddenT);
 
-    gsl_matrix_add(nn.weights_ho, weight_ho_delta);
-    gsl_matrix_free(weight_ho_delta);
-    gsl_matrix_add(nn.bias_o, output);
-    gsl_matrix_free(output);
+    matrix_add(nn.weights_ho, weight_ho_delta);
+    matrix_destroy(weight_ho_delta);
+    matrix_add(nn.bias_o, output);
+    matrix_destroy(output);
 
     // Let weights_ih and bias_ih learn from the error
-    gsl_matrix* whoT = gsl_matrix_alloc(nn.weights_ho->size2, nn.weights_ho->size1);
-    gsl_matrix_transpose_memcpy(whoT, nn.weights_ho);
-    gsl_matrix* hidden_error = multiplyMatrices(whoT, target);
-    gsl_matrix_free(whoT);
+    Matrix* whoT = matrix_create(nn.weights_ho->cols, nn.weights_ho->rows);
+    matrix_transpose(whoT, nn.weights_ho);
+    Matrix* hidden_error = matrix_multiply(whoT, target);
+    matrix_destroy(whoT);
 
     activationFunctiond(hidden);
-    gsl_matrix_mul_elements(hidden, hidden_error);
-    gsl_matrix_free(hidden_error);
-    gsl_matrix_scale(hidden, NN_LEARNING_RATE);
+    matrix_multiply_elements(hidden, hidden_error);
+    matrix_destroy(hidden_error);
+    matrix_scale(hidden, NN_LEARNING_RATE);
 
-    gsl_matrix* inputT = gsl_matrix_alloc(input->size2, input->size1);
-    gsl_matrix_transpose_memcpy(inputT, input);
-    gsl_matrix_free(input);
-    gsl_matrix* weight_ih_delta = multiplyMatrices(hidden, inputT);
-    gsl_matrix_free(inputT);
+    Matrix* inputT = matrix_create(input->cols, input->rows);
+    matrix_transpose(inputT, input);
+    matrix_destroy(input);
+    Matrix* weight_ih_delta = matrix_multiply(hidden, inputT);
+    matrix_destroy(inputT);
     
-    gsl_matrix_add(nn.weights_ih, weight_ih_delta);
-    gsl_matrix_free(weight_ih_delta);
-    gsl_matrix_add(nn.bias_h, hidden);
+    matrix_add(nn.weights_ih, weight_ih_delta);
+    matrix_destroy(weight_ih_delta);
+    matrix_add(nn.bias_h, hidden);
 
-    gsl_matrix_free(hidden);
+    matrix_destroy(hidden);
 }
 
 /**
  * a function, that destroys the Neural Network
  */
 void destroyNeuralNetwork(NeuralNetwork nn) {
-    gsl_matrix_free(nn.weights_ih);
-    gsl_matrix_free(nn.weights_ho);
-    gsl_matrix_free(nn.bias_h);
-    gsl_matrix_free(nn.bias_o);
+    matrix_destroy(nn.weights_ih);
+    matrix_destroy(nn.weights_ho);
+    matrix_destroy(nn.bias_h);
+    matrix_destroy(nn.bias_o);
 }
 #endif /* NN_H */

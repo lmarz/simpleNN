@@ -7,13 +7,12 @@ It has one hidden layer and uses Backpropagation as learning method.
 
 ## Getting Started
 ### Prerequisites
-You need the following library:
-+ [libgsl](https://www.gnu.org/software/gsl/) - (GNU Scientific Library)
+Just copy nn.h and matrix.h into your working directory 
 
 ### Compiling
 For gcc, you have to include these libraries in the linking process:
 ```
--lgsl -lm
+-lm
 ```
 
 ### Documentation
@@ -39,8 +38,6 @@ For gcc, you have to include these libraries in the linking process:
 * `gsl_matrix* predict(NeuralNetwork nn, double[] input, double[] output)` - a function, that calculates the output of the Neural Network. The length of the input array has to be the exact same as the amount of input nodes. The length of the output array has also to be exactlay the same as the amount of output nodes. The output values are always between 0 and 1
 * `void train(NeuralNetwork nn, double[] training_input, double[] training_output)` - a function, that trains the Neural Network one time with the given training input and the expected output. Input and output have to be the exact same length as the amount of their specific nodes
 * `void destroyNeuralNetwork(NeuralNetwork nn)` - a function, that destroys the Neural Network
-
-For help with `gsl_matrix`, visit the [GSL Documentation](https://www.gnu.org/software/gsl/doc/html/vectors.html#matrices)
 
 ## Example
 Here is a simple example on how to use the Neural Network:
