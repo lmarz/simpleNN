@@ -7,13 +7,12 @@ It has one hidden layer and uses Backpropagation as learning method.
 
 ## Getting Started
 ### Prerequisites
-You need the following library:
-+ [libgsl](https://www.gnu.org/software/gsl/) - (GNU Scientific Library)
+Just copy nn.h into your working directory 
 
 ### Compiling
 For gcc, you have to include these libraries in the linking process:
 ```
--lgsl -lm
+-lm
 ```
 
 ### Documentation
@@ -29,10 +28,10 @@ For gcc, you have to include these libraries in the linking process:
     * `int input_nodes` - the amount of input nodes
     * `int hidden_nodes` - the amount of hidden nodes
     * `int output_nodes` - the amount of output nodes
-    * `gsl_matrix* weights_ih` - the weights of the connections between the input nodes and the hidden nodes
-    * `gsl_matrix* weights_ho` - the weights of the connections between the hidden nodes and the output nodes
-    * `gsl_matrix* bias_ih` - the bias of the connections between the input nodes and the hidden nodes
-    * `gsl_matrix* bias_ho` - the bias of the connections between the hidden nodes and the output nodes
+    * `Matrix* weights_ih` - the weights of the connections between the input nodes and the hidden nodes
+    * `Matrix* weights_ho` - the weights of the connections between the hidden nodes and the output nodes
+    * `Matrix* bias_ih` - the bias of the connections between the input nodes and the hidden nodes
+    * `Matrix* bias_ho` - the bias of the connections between the hidden nodes and the output nodes
 
 #### Functions
 * `NeuralNetwork createNeuralNetwork(int input_nodes, int hidden_nodes, int output_nodes)` - a function, that creates a Neural Network
@@ -40,12 +39,11 @@ For gcc, you have to include these libraries in the linking process:
 * `void train(NeuralNetwork nn, double[] training_input, double[] training_output)` - a function, that trains the Neural Network one time with the given training input and the expected output. Input and output have to be the exact same length as the amount of their specific nodes
 * `void destroyNeuralNetwork(NeuralNetwork nn)` - a function, that destroys the Neural Network
 
-For help with `gsl_matrix`, visit the [GSL Documentation](https://www.gnu.org/software/gsl/doc/html/vectors.html#matrices)
-
 ## Example
 Here is a simple example on how to use the Neural Network:
 
 ``` c
+#include <stdio.h>
 #include "nn.h"
 
 int main() {
