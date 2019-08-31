@@ -127,7 +127,7 @@ void tanFunctiond(gsl_matrix* m) {
  * The activation function, that is used to determine, which function to use
  */
 void activationFunction(gsl_matrix* m) {
-    if(NN_ACTIVATION_FUNCTION == 0) {
+    if(NN_ACTIVATION_FUNCTION == NN_SIGMOID) {
         sigmoidFunction(m);
     } else {
         tanFunction(m);
@@ -138,7 +138,7 @@ void activationFunction(gsl_matrix* m) {
  * The activation function, that is used to determine, which function to use
  */
 void activationFunctiond(gsl_matrix* m) {
-    if(NN_ACTIVATION_FUNCTION == 0) {
+    if(NN_ACTIVATION_FUNCTION == NN_SIGMOID) {
         sigmoidFunctiond(m);
     } else {
         tanFunctiond(m);

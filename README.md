@@ -36,7 +36,7 @@ For gcc, you have to include these libraries in the linking process:
 
 #### Functions
 * `NeuralNetwork createNeuralNetwork(int input_nodes, int hidden_nodes, int output_nodes)` - a function, that creates a Neural Network
-* `gsl_matrix* predict(NeuralNetwork nn, double[] input, double[] output)` - a function, that calculates the output of the Neural Network. The length of the input array has to be the exact same as the amount of input nodes. The length of the output array has also to be exactlay the same as the amount of output nodes. The output values are always between 0 and 1
+* `void predict(NeuralNetwork nn, double[] input, double[] output)` - a function, that calculates the output of the Neural Network. The length of the input array has to be the exact same as the amount of input nodes. The length of the output array has also to be exactlay the same as the amount of output nodes. The output values are always between 0 and 1
 * `void train(NeuralNetwork nn, double[] training_input, double[] training_output)` - a function, that trains the Neural Network one time with the given training input and the expected output. Input and output have to be the exact same length as the amount of their specific nodes
 * `void destroyNeuralNetwork(NeuralNetwork nn)` - a function, that destroys the Neural Network
 
