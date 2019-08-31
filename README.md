@@ -7,7 +7,7 @@ It has one hidden layer and uses Backpropagation as learning method.
 
 ## Getting Started
 ### Prerequisites
-Just copy nn.h and matrix.h into your working directory 
+Just copy nn.h into your working directory 
 
 ### Compiling
 For gcc, you have to include these libraries in the linking process:
@@ -28,10 +28,10 @@ For gcc, you have to include these libraries in the linking process:
     * `int input_nodes` - the amount of input nodes
     * `int hidden_nodes` - the amount of hidden nodes
     * `int output_nodes` - the amount of output nodes
-    * `gsl_matrix* weights_ih` - the weights of the connections between the input nodes and the hidden nodes
-    * `gsl_matrix* weights_ho` - the weights of the connections between the hidden nodes and the output nodes
-    * `gsl_matrix* bias_ih` - the bias of the connections between the input nodes and the hidden nodes
-    * `gsl_matrix* bias_ho` - the bias of the connections between the hidden nodes and the output nodes
+    * `Matrix* weights_ih` - the weights of the connections between the input nodes and the hidden nodes
+    * `Matrix* weights_ho` - the weights of the connections between the hidden nodes and the output nodes
+    * `Matrix* bias_ih` - the bias of the connections between the input nodes and the hidden nodes
+    * `Matrix* bias_ho` - the bias of the connections between the hidden nodes and the output nodes
 
 #### Functions
 * `NeuralNetwork createNeuralNetwork(int input_nodes, int hidden_nodes, int output_nodes)` - a function, that creates a Neural Network
@@ -43,6 +43,7 @@ For gcc, you have to include these libraries in the linking process:
 Here is a simple example on how to use the Neural Network:
 
 ``` c
+#include <stdio.h>
 #include "nn.h"
 
 int main() {

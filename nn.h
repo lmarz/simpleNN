@@ -20,12 +20,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE. */
 
-#include "matrix.h"
-#include <math.h>
-#include <time.h>
-
 #ifndef NN_H
 #define NN_H
+
+#include <stdlib.h>
+#include <math.h>
+#include <time.h>
 
 /* ================================================== */
 /* General Settings */
@@ -54,7 +54,163 @@ enum ActivationFunctions {
 #endif
 
 /* ================================================== */
-/* Helper Functions */
+/* The main stuff, that should be used by the user */
+/* ================================================== */
+
+/**
+ * The struct of the matrix (duh)
+ */
+typedef struct Matrix {
+    int rows;
+    int cols;
+    double* data;
+} Matrix;
+
+/**
+ * the struct, that inhabits the information of the Neural Network
+ */
+typedef struct NeuralNetwork {
+    int input_nodes;
+    int hidden_nodes;
+    int output_nodes;
+    Matrix* weights_ih;
+    Matrix* weights_ho;
+    Matrix* bias_h;
+    Matrix* bias_o;
+} NeuralNetwork;
+
+/**
+ * a function, that creates a Neural Network
+ */
+NeuralNetwork createNeuralNetwork(int input_nodes, int hidden_nodes, int output_nodes);
+
+/**
+ * a function, that calculates the output of the Neural Network. The length of the input array has to be the exact same as the amount of input nodes. The length of the output array has also to be exactlay the same as the amount of output nodes. The output values are always between 0 and 1
+ */
+void predict(NeuralNetwork nn, double in[], double* out);
+
+/**
+ * a function, that trains the Neural Network one time wit the given training input and the expected output. Input and output have to be the exact same length as the amount of their specific nodes
+ */
+void train(NeuralNetwork nn, double in[], double tar[]);
+
+/**
+ * a function, that destroys the Neural Network
+ */
+void destroyNeuralNetwork(NeuralNetwork nn);
+
+/* ================================================== */
+/* The Matrix functions */
+/* ================================================== */
+
+/**
+ * A function, that creates a empty matrix (all values are zero)
+ */
+Matrix* matrix_create(int rows, int cols) {
+    Matrix* matrix = (Matrix*)malloc(sizeof(Matrix));
+    matrix->rows = rows;
+    matrix->cols = cols;
+    double* data = (double*) calloc(rows * cols, sizeof(double));
+    matrix->data = data;
+
+    return matrix;
+}
+
+/**
+ * A function, that gets the value from a specific row and coloumn of a matrix
+ */
+double matrix_get(Matrix* mat, size_t row, size_t col) {
+    return mat->data[row * mat->cols + col];
+}
+
+/**
+ * A function, that sets the value from a specific row and coloumn of a matrix
+ */
+void matrix_set(Matrix* mat, size_t row, size_t col, double val) {
+    mat->data[row * mat->cols + col] = val;
+}
+
+/**
+ * A function, that adds matrix B to matrix A
+ */
+void matrix_add(Matrix* A, Matrix* B) {
+    for(int i = 0; i < A->rows; i++) {
+        for(int j = 0; j < A->cols; j++) {
+            matrix_set(A, i, j, matrix_get(A, i, j) + matrix_get(B, i, j));
+        }
+    }
+}
+
+/**
+ * A function, that subtracts matrix B from matrix A
+ */
+void matrix_subtract(Matrix* A, Matrix* B) {
+    for(int i = 0; i < A->rows; i++) {
+        for(int j = 0; j < A->cols; j++) {
+            matrix_set(A, i, j, matrix_get(A, i, j) - matrix_get(B, i, j));
+        }
+    }
+}
+
+/**
+ * A function, that multiplies each value of a matrix with a certain value 
+ */
+void matrix_scale(Matrix* A, double val) {
+    for(int i = 0; i < A->rows; i++) {
+        for(int j = 0; j < A->cols; j++) {
+            matrix_set(A, i, j, matrix_get(A, i, j) * val);
+        }
+    }
+}
+
+/**
+ * A function, that multiplies the elements of matrix B with the elements of matrix A
+ */
+void matrix_multiply_elements(Matrix* A, Matrix* B) {
+    for(int i = 0; i < A->rows; i++) {
+        for(int j = 0; j < A->cols; j++) {
+            matrix_set(A, i, j, matrix_get(A, i, j) * matrix_get(B, i, j));
+        }
+    }
+}
+
+/**
+ * A function, that transposes matrix B to matrix A
+ */
+void matrix_transpose(Matrix* A, Matrix* B) {
+    for(int i = 0; i < A->rows; i++) {
+        for(int j = 0; j < A->cols; j++) {
+            matrix_set(A, j, i, matrix_get(B, i, j));
+        }
+    }
+}
+
+/**
+ * A function, that multiplies two matrices and returns the result in a new matrix 
+ */
+Matrix* matrix_multiply(Matrix* A, Matrix* B) {
+    Matrix* C = matrix_create(A->rows, B->cols);
+    for(int i = 0; i < C->rows; i++) {
+        for(int j = 0; j < C->cols; j++) {
+            for(int k = 0; k < A->cols; k++) {
+                matrix_set(C, i, j, matrix_get(C, i, j) + matrix_get(A, i, k) * matrix_get(B, k, j));
+            }
+        }
+    }
+
+    return C;
+}
+
+/**
+ * A function, that destroys a matrix
+ */
+void matrix_destroy(Matrix* mat) {
+    free(mat->data);
+    free(mat);
+}
+
+/* ================================================== */
+/* Activation Functions */
 /* ================================================== */
 
 /**
@@ -128,25 +284,9 @@ void activationFunctiond(Matrix* m) {
 }
 
 /* ================================================== */
-/* The main stuff, that should be used by the user */
+/* The main functions */
 /* ================================================== */
 
-/**
- * the struct, that inhabits the information of the Neural Network
- */
-typedef struct NeuralNetwork {
-    int input_nodes;
-    int hidden_nodes;
-    int output_nodes;
-    Matrix* weights_ih;
-    Matrix* weights_ho;
-    Matrix* bias_h;
-    Matrix* bias_o;
-} NeuralNetwork;
-
-/**
- * a function, that creates a Neural Network
- */
 NeuralNetwork createNeuralNetwork(int input_nodes, int hidden_nodes, int output_nodes) {
     NeuralNetwork nn;
     nn.input_nodes = input_nodes;
@@ -179,9 +319,6 @@ NeuralNetwork createNeuralNetwork(int input_nodes, int hidden_nodes, int output_
     return nn;
 }
 
-/**
- * a function, that calculates the output of the Neural Network. The length of the input array has to be the exact same as the amount of input nodes. The length of the output array has also to be exactlay the same as the amount of output nodes. The output values are always between 0 and 1
- */
 void predict(NeuralNetwork nn, double in[], double* out) {
     Matrix* input = matrix_create(nn.input_nodes, 1);
     for(int i = 0; i < nn.input_nodes; i++) {
@@ -204,9 +341,6 @@ void predict(NeuralNetwork nn, double in[], double* out) {
     }
 }
 
-/**
- * a function, that trains the Neural Network one time wit the given training input and the expected output. Input and output have to be the exact same length as the amount of their specific nodes
- */
 void train(NeuralNetwork nn, double in[], double tar[]) {
     // TODO: Needs Documentation (for myself)
     // Predict the output
@@ -271,9 +405,6 @@ void train(NeuralNetwork nn, double in[], double tar[]) {
     matrix_destroy(hidden);
 }
 
-/**
- * a function, that destroys the Neural Network
- */
 void destroyNeuralNetwork(NeuralNetwork nn) {
     matrix_destroy(nn.weights_ih);
     matrix_destroy(nn.weights_ho);
