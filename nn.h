@@ -342,7 +342,8 @@ void predict(NeuralNetwork nn, double in[], double* out) {
 }
 
 void train(NeuralNetwork nn, double in[], double tar[]) {
-    // TODO: Needs Documentation (for myself)
+    // *mario accent* mamma mia! time for spaghetti!
+    
     // Predict the output
     Matrix* input = matrix_create(nn.input_nodes, 1);
     for(int i = 0; i < nn.input_nodes; i++) {
