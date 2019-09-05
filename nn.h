@@ -26,6 +26,7 @@ SOFTWARE. */
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include <string.h>
 
 /* ================================================== */
 /* General Settings */
@@ -104,7 +105,7 @@ void destroyNeuralNetwork(NeuralNetwork nn);
 /* ================================================== */
 
 /**
- * A function, that creates a empty matrix (all values are zero)
+ * A function, that creates an empty matrix (all values are zero)
  */
 Matrix* matrix_create(int rows, int cols) {
     Matrix* matrix = (Matrix*)malloc(sizeof(Matrix));
@@ -114,6 +115,15 @@ Matrix* matrix_create(int rows, int cols) {
     matrix->data = data;
 
     return matrix;
+}
+
+/**
+ * A function, that creates a copy of a matrix
+ */
+Matrix* matrix_copy(Matrix* mat) {
+    Matrix* A = matrix_create(mat->rows, mat->cols);
+    memcpy(A->data, mat->data, sizeof(double) * mat->rows * mat->cols);
+    return A;
 }
 
 /**
@@ -175,14 +185,16 @@ void matrix_multiply_elements(Matrix* A, Matrix* B) {
 }
 
 /**
- * A function, that transposes matrix B to matrix A
+ * A function, that transposes a matrix
  */
-void matrix_transpose(Matrix* A, Matrix* B) {
-    for(int i = 0; i < A->rows; i++) {
-        for(int j = 0; j < A->cols; j++) {
-            matrix_set(A, j, i, matrix_get(B, i, j));
+Matrix* matrix_transpose(Matrix* mat) {
+    Matrix* A = matrix_create(mat->cols, mat->rows);
+    for(int i = 0; i < mat->rows; i++) {
+        for(int j = 0; j < mat->cols; j++) {
+            matrix_set(A, j, i, matrix_get(mat, i, j));
         }
     }
+    return A;
 }
 
 /**
@@ -297,6 +309,7 @@ NeuralNetwork createNeuralNetwork(int input_nodes, int hidden_nodes, int output_
     nn.bias_h = matrix_create(hidden_nodes, 1);
     nn.bias_o = matrix_create(output_nodes, 1);
 
+    // Fill in the matrices with random numbers between -1 and 1
     srand(time(NULL));
 
     for(int i = 0; i < hidden_nodes; i++) {
@@ -320,31 +333,37 @@ NeuralNetwork createNeuralNetwork(int input_nodes, int hidden_nodes, int output_
 }
 
 void predict(NeuralNetwork nn, double in[], double* out) {
+    // Create input matrix
     Matrix* input = matrix_create(nn.input_nodes, 1);
     for(int i = 0; i < nn.input_nodes; i++) {
         matrix_set(input, i, 0, in[i]);
     }
 
+    // Transfer the input to the hidden nodes
     Matrix* hidden = matrix_multiply(nn.weights_ih, input);
     matrix_add(hidden, nn.bias_h);
     activationFunction(hidden);
 
+    // Transfer the data to the output nodes
     Matrix* output = matrix_multiply(nn.weights_ho, hidden);
     matrix_add(output, nn.bias_o);
     activationFunction(output);
 
-    matrix_destroy(hidden);
-    matrix_destroy(input);
-
+    // Return the values of the output nodes
     for(int i = 0; i < nn.output_nodes; i++) {
         out[i] = matrix_get(output, i, 0);
     }
+
+    // Destroy matrices
+    matrix_destroy(output);
+    matrix_destroy(hidden);
+    matrix_destroy(input);
 }
 
 void train(NeuralNetwork nn, double in[], double tar[]) {
     // *mario accent* mamma mia! time for spaghetti!
     
-    // Predict the output
+    // Predict the output (same as predict())
     Matrix* input = matrix_create(nn.input_nodes, 1);
     for(int i = 0; i < nn.input_nodes; i++) {
         matrix_set(input, i, 0, in[i]);
@@ -358,52 +377,63 @@ void train(NeuralNetwork nn, double in[], double tar[]) {
     matrix_add(output, nn.bias_o);
     activationFunction(output);
 
-    // Format the target values
+    // Create target matrix
     Matrix* target = matrix_create(nn.output_nodes, 1);
     for(int i = 0; i < nn.output_nodes; i++) {
         matrix_set(target, i, 0, tar[i]);
     }
 
-    // Get the Error
-    matrix_subtract(target, output);
+    // Calulate the error
+    Matrix* output_error = matrix_copy(target);
+    matrix_subtract(output_error, output);
 
-    // Let weights_ho and bias_ho learn from this error
-    activationFunctiond(output);
-    matrix_multiply_elements(output, target);
-    matrix_scale(output, NN_LEARNING_RATE);
+    // Calculate gradient
+    Matrix* gradient = matrix_copy(output);
+    activationFunctiond(gradient);
+    matrix_multiply_elements(gradient, output_error);
+    matrix_scale(gradient, NN_LEARNING_RATE);
 
-    Matrix* hiddenT = matrix_create(hidden->cols, hidden->rows);
-    matrix_transpose(hiddenT, hidden);
-    Matrix* weight_ho_delta = matrix_multiply(output, hiddenT);
-    matrix_destroy(hiddenT);
+    // Calculate deltas
+    Matrix* hidden_T = matrix_transpose(hidden);
+    Matrix* weights_ho_delta = matrix_multiply(gradient, hidden_T);
 
-    matrix_add(nn.weights_ho, weight_ho_delta);
-    matrix_destroy(weight_ho_delta);
-    matrix_add(nn.bias_o, output);
-    matrix_destroy(output);
+    // Adjust the weights by its deltas
+    matrix_add(nn.weights_ho, weights_ho_delta);
+    // Adjust the bias by its deltas (gradient)
+    matrix_add(nn.bias_o, gradient);
 
-    // Let weights_ih and bias_ih learn from the error
-    Matrix* whoT = matrix_create(nn.weights_ho->cols, nn.weights_ho->rows);
-    matrix_transpose(whoT, nn.weights_ho);
-    Matrix* hidden_error = matrix_multiply(whoT, target);
-    matrix_destroy(whoT);
+    // Calculate the hidden layer errors
+    Matrix* who_T = matrix_transpose(nn.weights_ho);
+    Matrix* hidden_error = matrix_multiply(who_T, output_error);
 
-    activationFunctiond(hidden);
-    matrix_multiply_elements(hidden, hidden_error);
+    // Calculate hidden gradient
+    Matrix* hidden_gradient = matrix_copy(hidden);
+    activationFunctiond(hidden_gradient);
+    matrix_multiply_elements(hidden_gradient, hidden_error);
+    matrix_scale(hidden_gradient, NN_LEARNING_RATE);
+
+    // Calculate input->hidden deltas
+    Matrix* input_T = matrix_transpose(input);
+    Matrix* weights_ih_delta = matrix_multiply(hidden_gradient, input_T);
+
+    // Adjust the weights by its deltas
+    matrix_add(nn.weights_ih, weights_ih_delta);
+    matrix_add(nn.bias_h, hidden_gradient);
+
+    // Destroy matrices
+    matrix_destroy(weights_ih_delta);
+    matrix_destroy(input_T);
+    matrix_destroy(hidden_gradient);
     matrix_destroy(hidden_error);
-    matrix_scale(hidden, NN_LEARNING_RATE);
-
-    Matrix* inputT = matrix_create(input->cols, input->rows);
-    matrix_transpose(inputT, input);
-    matrix_destroy(input);
-    Matrix* weight_ih_delta = matrix_multiply(hidden, inputT);
-    matrix_destroy(inputT);
-    
-    matrix_add(nn.weights_ih, weight_ih_delta);
-    matrix_destroy(weight_ih_delta);
-    matrix_add(nn.bias_h, hidden);
-
+    matrix_destroy(who_T);
+    matrix_destroy(weights_ho_delta);
+    matrix_destroy(hidden_T);
+    matrix_destroy(gradient);
+    matrix_destroy(output_error);
+    matrix_destroy(target);
+    matrix_destroy(output);
     matrix_destroy(hidden);
+    matrix_destroy(input);
 }
 
 void destroyNeuralNetwork(NeuralNetwork nn) {
