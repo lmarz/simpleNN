@@ -25,7 +25,8 @@ For gcc, you have to include these libraries in the linking process:
     * `NN_SIGMOID` - the sigmoid function
     * `NN_TANGENT` - the tangent function
 * `struct NeuralNetwork` - the struct, that inhabits the information of the Neural Network
-    * `double learning_rate`
+    * `double learning_rate` - the learning rate (same as `NN_LEARNING_RATE`)
+    * `int activation_function` - the activation function (same as `NN_ACTIVATION_FUNCTION`)
     * `int input_nodes` - the amount of input nodes
     * `int hidden_nodes` - the amount of hidden nodes
     * `int output_nodes` - the amount of output nodes
