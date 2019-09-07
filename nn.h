@@ -24,6 +24,7 @@ SOFTWARE. */
 #define NN_H
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
 #include <time.h>
 #include <string.h>
@@ -71,6 +72,8 @@ typedef struct Matrix {
  * the struct, that inhabits the information of the Neural Network
  */
 typedef struct NeuralNetwork {
+    double learning_rate;
+    int activation_function;
     int input_nodes;
     int hidden_nodes;
     int output_nodes;
@@ -100,14 +103,33 @@ void train(NeuralNetwork nn, double in[], double tar[]);
  */
 void destroyNeuralNetwork(NeuralNetwork nn);
 
+/**
+ * a function, that saves the Neural Network in a file
+ */
+void saveNeuralNetwork(NeuralNetwork nn, const char* path);
+
+/**
+ * a function, that loads a Neural Network from a file
+ */
+NeuralNetwork loadNeuralNetwork(const char* path);
+
 /* ================================================== */
 /* The Matrix functions */
 /* ================================================== */
 
+Matrix* matrix_create(int rows, int cols, double* data) {
+    Matrix* matrix = (Matrix*)malloc(sizeof(Matrix));
+    matrix->rows = rows;
+    matrix->cols = cols;
+    matrix->data = data;
+
+    return matrix;
+}
+
 /**
  * A function, that creates an empty matrix (all values are zero)
  */
-Matrix* matrix_create(int rows, int cols) {
+Matrix* matrix_create_empty(int rows, int cols) {
     Matrix* matrix = (Matrix*)malloc(sizeof(Matrix));
     matrix->rows = rows;
     matrix->cols = cols;
@@ -121,7 +143,7 @@ Matrix* matrix_create(int rows, int cols) {
  * A function, that creates a copy of a matrix
  */
 Matrix* matrix_copy(Matrix* mat) {
-    Matrix* A = matrix_create(mat->rows, mat->cols);
+    Matrix* A = matrix_create_empty(mat->rows, mat->cols);
     memcpy(A->data, mat->data, sizeof(double) * mat->rows * mat->cols);
     return A;
 }
@@ -188,7 +210,7 @@ void matrix_multiply_elements(Matrix* A, Matrix* B) {
  * A function, that transposes a matrix
  */
 Matrix* matrix_transpose(Matrix* mat) {
-    Matrix* A = matrix_create(mat->cols, mat->rows);
+    Matrix* A = matrix_create_empty(mat->cols, mat->rows);
     for(int i = 0; i < mat->rows; i++) {
         for(int j = 0; j < mat->cols; j++) {
             matrix_set(A, j, i, matrix_get(mat, i, j));
@@ -201,7 +223,7 @@ Matrix* matrix_transpose(Matrix* mat) {
  * A function, that multiplies two matrices and returns the result in a new matrix 
  */
 Matrix* matrix_multiply(Matrix* A, Matrix* B) {
-    Matrix* C = matrix_create(A->rows, B->cols);
+    Matrix* C = matrix_create_empty(A->rows, B->cols);
     for(int i = 0; i < C->rows; i++) {
         for(int j = 0; j < C->cols; j++) {
             for(int k = 0; k < A->cols; k++) {
@@ -276,8 +298,8 @@ void tanFunctiond(Matrix* m) {
 /**
  * The activation function, that is used to determine, which function to use
  */
-void activationFunction(Matrix* m) {
-    if(NN_ACTIVATION_FUNCTION == NN_SIGMOID) {
+void activationFunction(NeuralNetwork nn, Matrix* m) {
+    if(nn.activation_function == NN_SIGMOID) {
         sigmoidFunction(m);
     } else {
         tanFunction(m);
@@ -287,8 +309,8 @@ void activationFunction(Matrix* m) {
 /**
  * The activation function, that is used to determine, which function to use
  */
-void activationFunctiond(Matrix* m) {
-    if(NN_ACTIVATION_FUNCTION == NN_SIGMOID) {
+void activationFunctiond(NeuralNetwork nn, Matrix* m) {
+    if(nn.activation_function == NN_SIGMOID) {
         sigmoidFunctiond(m);
     } else {
         tanFunctiond(m);
@@ -301,13 +323,15 @@ void activationFunctiond(Matrix* m) {
 
 NeuralNetwork createNeuralNetwork(int input_nodes, int hidden_nodes, int output_nodes) {
     NeuralNetwork nn;
+    nn.learning_rate = NN_LEARNING_RATE;
+    nn.activation_function = NN_ACTIVATION_FUNCTION;
     nn.input_nodes = input_nodes;
     nn.hidden_nodes = hidden_nodes;
     nn.output_nodes = output_nodes;
-    nn.weights_ih = matrix_create(hidden_nodes, input_nodes);
-    nn.weights_ho = matrix_create(output_nodes, hidden_nodes);
-    nn.bias_h = matrix_create(hidden_nodes, 1);
-    nn.bias_o = matrix_create(output_nodes, 1);
+    nn.weights_ih = matrix_create_empty(hidden_nodes, input_nodes);
+    nn.weights_ho = matrix_create_empty(output_nodes, hidden_nodes);
+    nn.bias_h = matrix_create_empty(hidden_nodes, 1);
+    nn.bias_o = matrix_create_empty(output_nodes, 1);
 
     // Fill in the matrices with random numbers between -1 and 1
     srand(time(NULL));
@@ -334,7 +358,7 @@ NeuralNetwork createNeuralNetwork(int input_nodes, int hidden_nodes, int output_
 
 void predict(NeuralNetwork nn, double in[], double* out) {
     // Create input matrix
-    Matrix* input = matrix_create(nn.input_nodes, 1);
+    Matrix* input = matrix_create_empty(nn.input_nodes, 1);
     for(int i = 0; i < nn.input_nodes; i++) {
         matrix_set(input, i, 0, in[i]);
     }
@@ -342,12 +366,12 @@ void predict(NeuralNetwork nn, double in[], double* out) {
     // Transfer the input to the hidden nodes
     Matrix* hidden = matrix_multiply(nn.weights_ih, input);
     matrix_add(hidden, nn.bias_h);
-    activationFunction(hidden);
+    activationFunction(nn, hidden);
 
     // Transfer the data to the output nodes
     Matrix* output = matrix_multiply(nn.weights_ho, hidden);
     matrix_add(output, nn.bias_o);
-    activationFunction(output);
+    activationFunction(nn, output);
 
     // Return the values of the output nodes
     for(int i = 0; i < nn.output_nodes; i++) {
@@ -364,21 +388,21 @@ void train(NeuralNetwork nn, double in[], double tar[]) {
     // *mario accent* mamma mia! time for spaghetti!
     
     // Predict the output (same as predict())
-    Matrix* input = matrix_create(nn.input_nodes, 1);
+    Matrix* input = matrix_create_empty(nn.input_nodes, 1);
     for(int i = 0; i < nn.input_nodes; i++) {
         matrix_set(input, i, 0, in[i]);
     }
 
     Matrix* hidden = matrix_multiply(nn.weights_ih, input);
     matrix_add(hidden, nn.bias_h);
-    activationFunction(hidden);
+    activationFunction(nn, hidden);
 
     Matrix* output = matrix_multiply(nn.weights_ho, hidden);
     matrix_add(output, nn.bias_o);
-    activationFunction(output);
+    activationFunction(nn, output);
 
     // Create target matrix
-    Matrix* target = matrix_create(nn.output_nodes, 1);
+    Matrix* target = matrix_create_empty(nn.output_nodes, 1);
     for(int i = 0; i < nn.output_nodes; i++) {
         matrix_set(target, i, 0, tar[i]);
     }
@@ -389,9 +413,9 @@ void train(NeuralNetwork nn, double in[], double tar[]) {
 
     // Calculate gradient
     Matrix* gradient = matrix_copy(output);
-    activationFunctiond(gradient);
+    activationFunctiond(nn, gradient);
     matrix_multiply_elements(gradient, output_error);
-    matrix_scale(gradient, NN_LEARNING_RATE);
+    matrix_scale(gradient, nn.learning_rate);
 
     // Calculate deltas
     Matrix* hidden_T = matrix_transpose(hidden);
@@ -408,9 +432,9 @@ void train(NeuralNetwork nn, double in[], double tar[]) {
 
     // Calculate hidden gradient
     Matrix* hidden_gradient = matrix_copy(hidden);
-    activationFunctiond(hidden_gradient);
+    activationFunctiond(nn, hidden_gradient);
     matrix_multiply_elements(hidden_gradient, hidden_error);
-    matrix_scale(hidden_gradient, NN_LEARNING_RATE);
+    matrix_scale(hidden_gradient, nn.learning_rate);
 
     // Calculate input->hidden deltas
     Matrix* input_T = matrix_transpose(input);
@@ -441,5 +465,101 @@ void destroyNeuralNetwork(NeuralNetwork nn) {
     matrix_destroy(nn.weights_ho);
     matrix_destroy(nn.bias_h);
     matrix_destroy(nn.bias_o);
+}
+
+void saveNeuralNetwork(NeuralNetwork nn, const char* path) {
+    // Open / Create file
+    FILE* file = fopen(path, "wb");
+
+    // Write the id
+    char id = 0b00101010;
+    fwrite(&id, sizeof(char), 1, file);
+
+    // Write NN_LEARNING_RATE
+    double learningRate = nn.learning_rate;
+    fwrite(&learningRate, sizeof(double), 1, file);
+
+    // Write NN_ACTIVATION_FUNCTION
+    int activation = nn.activation_function;
+    fwrite(&activation, sizeof(int), 1, file);
+
+    // Write input_nodes
+    fwrite(&nn.input_nodes, sizeof(int), 1, file);
+
+    // Write hidden_nodes
+    fwrite(&nn.hidden_nodes, sizeof(int), 1, file);
+
+    // Write output_nodes
+    fwrite(&nn.output_nodes, sizeof(int), 1, file);
+
+    // Write weights_ih
+    fwrite(nn.weights_ih->data, sizeof(double), nn.input_nodes * nn.hidden_nodes, file);
+
+    // Write weights_ho
+    fwrite(nn.weights_ho->data, sizeof(double), nn.hidden_nodes * nn.output_nodes, file);
+
+    // Write bias_h
+    fwrite(nn.bias_h->data, sizeof(double), nn.hidden_nodes, file);
+
+    // Write bias_h
+    fwrite(nn.bias_o->data, sizeof(double), nn.output_nodes, file);
+
+    fclose(file);
+}
+
+NeuralNetwork loadNeuralNetwork(const char* path) {
+    // Open the file
+    FILE* file = fopen(path, "rb");
+    if(!file) { printf("File not found: %s\n", path); exit(-1); }
+
+    // Check id
+    char id;
+    fread(&id, 1, 1, file);
+    if(id != 0b00101010) {
+        printf("Wrong format! Not the correct file?");
+        fclose(file);
+        exit(-1);
+    }
+
+    NeuralNetwork nn;
+
+    // Get learning rate
+    fread(&nn.learning_rate, sizeof(double), 1, file);
+
+    // Get activation function
+    fread(&nn.activation_function, sizeof(int), 1, file);
+
+    // Get input nodes
+    fread(&nn.input_nodes, sizeof(int), 1, file);
+
+    // Get hidden nodes
+    fread(&nn.hidden_nodes, sizeof(int), 1, file);
+
+    // Get output nodes
+    fread(&nn.output_nodes, sizeof(int), 1, file);
+
+    // Get weights_ih
+    double* ih_data = (double*)malloc(sizeof(double) * nn.input_nodes * nn.hidden_nodes);
+    fread(ih_data, sizeof(double), nn.input_nodes * nn.hidden_nodes, file);
+    nn.weights_ih = matrix_create(nn.hidden_nodes, nn.input_nodes, ih_data);
+
+    // Get weights_ho
+    double* ho_data = (double*)malloc(sizeof(double) * nn.hidden_nodes * nn.output_nodes);
+    fread(ho_data, sizeof(double), nn.hidden_nodes * nn.output_nodes, file);
+    nn.weights_ho = matrix_create(nn.output_nodes, nn.hidden_nodes, ho_data);
+
+    // Get bias_h
+    double* h_data = (double*)malloc(sizeof(double) * nn.hidden_nodes);
+    fread(h_data, sizeof(double), nn.hidden_nodes, file);
+    nn.bias_h = matrix_create(nn.hidden_nodes, 1, h_data);
+
+    // Get bias_o
+    double* o_data = (double*)malloc(sizeof(double) * nn.output_nodes);
+    fread(o_data, sizeof(double), nn.output_nodes, file);
+    nn.bias_o = matrix_create(nn.output_nodes, 1, o_data);
+
+    fclose(file);
+
+    return nn;
 }
 #endif /* NN_H */
