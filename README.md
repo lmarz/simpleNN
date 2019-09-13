@@ -40,8 +40,8 @@ For gcc, you have to include these libraries in the linking process:
 * `void predict(NeuralNetwork nn, double[] input, double[] output)` - a function, that calculates the output of the Neural Network. The length of the input array has to be the exact same as the amount of input nodes. The length of the output array has also to be exactlay the same as the amount of output nodes. The output values are always between 0 and 1
 * `void train(NeuralNetwork nn, double[] training_input, double[] training_output)` - a function, that trains the Neural Network one time with the given training input and the expected output. Input and output have to be the exact same length as the amount of their specific nodes
 * `void destroyNeuralNetwork(NeuralNetwork nn)` - a function, that destroys the Neural Network
-* `void saveNeuralNetwork(NeuralNetwork nn, const char* path)` - a function, that saves the Neural Network in a file. For more details, see [fileformat](fileformat/fileformat.md)
-* `NeuralNetwork loadNeuralNetwork(const char* path)` - a function, that loads a Neural Network from a file. For more details, see [fileformat](fileformat/fileformat.md)
+* `void saveNeuralNetwork(NeuralNetwork nn, const char* path)` - a function, that saves the Neural Network in a file. For more details, see [fileformat](fileformat/FILEFORMAT.md)
+* `NeuralNetwork loadNeuralNetwork(const char* path)` - a function, that loads a Neural Network from a file. For more details, see [fileformat](fileformat/FILEFORMAT.md)
 
 ## Example
 Here is a simple example on how to use the Neural Network:
@@ -79,6 +79,9 @@ int main() {
     double output[nn.output_nodes]; 
     predict(nn, training_input_1, output);
     printf("Output: %f\n", output[0]);
+
+    // Save the trained Neural Network to nn.bin
+    saveNeuralNetwork(nn, "nn.bin");
 
     // Destroy the Neural Network at the end
     destroyNeuralNetwork(nn);

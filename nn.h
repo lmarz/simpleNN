@@ -117,6 +117,9 @@ NeuralNetwork loadNeuralNetwork(const char* path);
 /* The Matrix functions */
 /* ================================================== */
 
+/**
+ * A function, that creates a matrix with the input data
+ */
 Matrix* matrix_create(int rows, int cols, double* data) {
     Matrix* matrix = (Matrix*)malloc(sizeof(Matrix));
     matrix->rows = rows;
@@ -340,16 +343,12 @@ NeuralNetwork createNeuralNetwork(int input_nodes, int hidden_nodes, int output_
         for(int j = 0; j < input_nodes; j++) {
             matrix_set(nn.weights_ih, i, j, (double)rand()/RAND_MAX * 2 - 1);
         }
+        matrix_set(nn.bias_h, i, 0, (double)rand()/RAND_MAX * 2 - 1);
     }
     for(int i = 0; i < output_nodes; i++) {
         for(int j = 0; j < hidden_nodes; j++) {
             matrix_set(nn.weights_ho, i, j, (double)rand()/RAND_MAX * 2 - 1);
         }
-    }
-    for(int i = 0; i < hidden_nodes; i++) {
-        matrix_set(nn.bias_h, i, 0, (double)rand()/RAND_MAX * 2 - 1);
-    }
-    for(int i = 0; i < output_nodes; i++) {
         matrix_set(nn.bias_o, i, 0, (double)rand()/RAND_MAX * 2 - 1);
     }
 
